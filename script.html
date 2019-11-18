@@ -1,0 +1,164 @@
+<head>
+
+    <!--Import Google Icon Font-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <!--Let browser know website is optimized for mobile-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+
+<header>
+    <div class="navbar-fixed">
+        <nav>
+            <div class="nav-wrapper cyan darken-1 ">
+                <div class="container">
+                    <a href="#" class="brand-logo">UnB Crawler</a>
+                    <a href="#" class="sidenav-trigger" data-target="mobile-links">
+                        <i class="material-icons">menu</i>
+                    </a>
+
+                </div>
+            </div>
+        </nav>
+    </div>
+</header>
+
+<main>
+    <div class="container">
+        <h5 id="course"></h5>
+        <div class="content ">
+
+            <script src="https://unpkg.com/gojs/release/go-debug.js"></script>
+            <div id="myDiagramDiv" style="border: solid 1px black; width:1080x; height:1080px"></div>
+            <script id="code">
+                function init(result) {
+                    var $ = go.GraphObject.make; // for conciseness in defining templates
+
+                    var myDiagram =
+                        $(go.Diagram, "myDiagramDiv", // create a Diagram for the DIV HTML element
+                            { // enable undo & redo
+                                "undoManager.isEnabled": true
+                            });
+
+                    // define a simple Node template
+                    myDiagram.nodeTemplate =
+                        $(go.Node, "Auto", // the Shape will go around the TextBlock
+                            $(go.Shape, "RoundedRectangle", {
+                                    strokeWidth: 0,
+                                    fill: "white"
+                                }, // default fill is white
+                                // Shape.fill is bound to Node.data.color
+                                new go.Binding("fill", "color")),
+                            $(go.TextBlock, {
+                                    margin: 8
+                                }, // some room around the text
+                                // TextBlock.text is bound to Node.data.key
+                                new go.Binding("text", "name"))
+                        );
+
+                    // but use the default Link template, by not setting Diagram.linkTemplate
+
+                    // create the model data that will be represented by Nodes and Links
+                    var keys = [];
+                    var links = [];
+                    result.flux.forEach((subject, index) => {
+                        keys.push({
+                            key: subject.id,
+                            name: subject.name,
+                            color: "lightblue"
+                        });
+                        subject.dependencies.replace(/&/gi, "|").split('|').forEach(function(from) {
+                            links.push({
+                                from: from,
+                                to: subject.id
+                            });
+                        });
+                    });
+                    console.log(result);
+
+                    myDiagram.model = new go.GraphLinksModel(keys, links);
+                    /*
+                                            [{
+                                                key: "Alpha",
+                                                color: "lightblue"
+                                            }, {
+                                                key: "Beta",
+                                                color: "orange"
+                                            }, {
+                                                key: "Gamma",
+                                                color: "lightgreen"
+                                            }, {
+                                                key: "Delta",
+                                                color: "pink"
+                                            }], [{
+                                                from: "Alpha",
+                                                to: "Beta"
+                                            }, {
+                                                from: "Alpha",
+                                                to: "Gamma"
+                                            }, {
+                                                from: "Beta",
+                                                to: "Beta"
+                                            }, {
+                                                from: "Gamma",
+                                                to: "Delta"
+                                            }, {
+                                                from: "Delta",
+                                                to: "Alpha"
+                                            }]);*/
+                }
+            </script>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Matéria</th>
+                        <th>Pré-Requisitos</th>
+                        <th>Wow</th>
+                    </tr>
+                </thead>
+
+                <tbody id="subjects">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<!--Import jQuery before materialize.js-->
+<script type="text/javascript" src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+
+<!-- Compiled and minified JavaScript -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        $("#course").text("Seu curso está sendo carregado...");
+        var params = new URLSearchParams(window.location.search);
+
+        $.get("course_id?name=" + params.get("name"), function(data) {
+            console.log(data);
+
+            id = JSON.parse(data)[0].course.id;
+            console.log(id);
+            $.get("json/" + id, function(s) {
+                if (s == "Course Loading") {
+
+                } else {
+                    console.log(s);
+                    s = JSON.parse(s);
+                    init(s);
+                    $("#course").text(s.course.name);
+                    s.flux.forEach(element => {
+                        $("#subjects").append(`<tr>
+                            <td>${element.name}</td>
+                            <td>${element.period}</td>
+                            <td>${element.dependencies}</td>
+                        </tr>`);
+                    });
+                }
+            });
+        });
+    });
+</script>
