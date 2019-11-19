@@ -1,7 +1,7 @@
 const express = require('express');
 
-const FL = require('./file_utils.js');
-const CL = require('./crawler.js');
+const file_utils = require('./file_utils.js');
+const crawler = require('./crawler.js');
 
 var app = express();
 var database;
@@ -9,22 +9,22 @@ var courses = [];
 var loading = [];
 
 function loadDatabase() {
-    database = FL.readJSONFile('database.json');
+    database = file_utils.readJSONFile('database.json');
 }
 
 function saveDatabase() {
-    FL.saveJSONFile('database.json', database);
+    file_utils.saveJSONFile('database.json', database);
 }
 
 function loadCourse(id, callback) {
     var ff;
     try {
         console.log("trying to read " + id);
-        ff = FL.readJSONFile("course_" + id + ".json");
+        ff = file_utils.readJSONFile("course_" + id + ".json");
         ff.course = getCourse(id);
         saveCourse(id, ff);
     } catch (e) {
-        CL.loadCourse(id, (data) => {
+        crawler.loadCourse(id, (data) => {
             if (data != null) {
                 data.course = getCourse(id);
                 saveCourse(id, data);
@@ -39,7 +39,7 @@ function loadCourse(id, callback) {
 }
 
 function saveCourse(id, data) {
-    FL.saveJSONFile("course_" + id + ".json", data);
+    file_utils.saveJSONFile("course_" + id + ".json", data);
 }
 
 function strMatch(str, query) {
@@ -110,7 +110,7 @@ function init() {
             console.log("Courses loaded!");
 
             app.get('/', function(req, res) {
-                res.send("<html>" + FL.readFile("script.html").toString());
+                res.send("<html>" + file_utils.readFile("script.html").toString());
             });
 
             app.get('/json/:id', function(req, res) {
